@@ -17,7 +17,7 @@ def generate_audio_file_melotts(text, language='EN', accent='EN-US', speed=1.0, 
         dict: A dictionary containing the message and the file path of the generated audio.
     """
     # Define the API endpoint
-    url = f"http://localhost:{Config.TTS_PORT_LOCAL}/generate-audio/"
+    url = f"http://0.0.0.0:{Config.TTS_PORT_LOCAL}/generate-audio/"
 
     # Define the payload
     payload = {

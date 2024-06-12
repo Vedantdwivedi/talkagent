@@ -74,7 +74,7 @@ def text_to_speech(model, api_key, text, output_file_path, local_model_path=None
             sf.write(output_file_path, buffer, rate) 
 
 
-        elif model == "melotts": # this is a local model
+        elif model in ["melotts", "coqui_tts"]: # this is a local model
             generate_audio_file_melotts(text=text, filename=output_file_path)
         elif model == 'local':
             # Placeholder for local TTS model

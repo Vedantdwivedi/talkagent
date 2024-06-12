@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from melo.api import TTS
 from config import Config
 import torch
 import uuid
@@ -38,11 +37,18 @@ def get_device():
     else:
         return 'cpu'
 
-# Initialize the TTS model
 device = get_device()  # Determine the appropriate device
-model = TTS(language='EN', device=device)
-speaker_ids = model.hps.data.spk2id
 
+# Initialize the TTS model
+if Config.TTS_MODEL=="melotts":
+    from melo.api import TTS
+    model = TTS(language='EN', device=device)
+    speaker_ids = model.hps.data.spk2id
+elif Config.TTS_MODEL=="coqui_tts":
+    from TTS.api import TTS
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False).to(device)
+    # model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 
 @app.post("/generate-audio/")
 def generate_audio(request: TextToSpeechRequest):
@@ -58,15 +64,20 @@ def generate_audio(request: TextToSpeechRequest):
     Raises:
         HTTPException: If the specified accent is invalid or if there is an error during audio generation.
     """
-    if request.accent not in speaker_ids:
-        raise HTTPException(status_code=400, detail="Invalid accent specified")
+    # if request.accent not in speaker_ids:
+    #     raise HTTPException(status_code=400, detail="Invalid accent specified")
     
     try:
         # Use the provided filename or generate a unique one
         output_filename = request.filename
-        
+        print(f"Model Name: {Config.TTS_MODEL}")
+        print(f"Output File Name: {output_filename}")
         # Generate the audio file
-        model.tts_to_file(request.text, speaker_ids[request.accent], output_filename, speed=request.speed)
+        if Config.TTS_MODEL=="melotts":
+            model.tts_to_file(request.text, speaker_ids['EN-Default'], output_filename, speed=request.speed)
+        elif Config.TTS_MODEL=="coqui_tts":
+            model.tts_to_file(request.text, file_path=output_filename)
+            # model.tts_to_file(request.text, speaker_wav="sample1.mps", file_path=output_filename)
         
         return {"message": "Audio file generated successfully", "file_path": output_filename}
     except Exception as e:
